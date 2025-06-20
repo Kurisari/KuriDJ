@@ -13,23 +13,42 @@ class MusicCommands(commands.Cog):
             self.queues[guild_id] = MusicQueue()
         return self.queues[guild_id]
 
+    def convert_to_invidious(self, url: str) -> str:
+        """Convierte una URL de YouTube a una de Invidious."""
+        invidious_instance = "https://vid.puffyan.us"
+        video_id = ""
+
+        if "watch?v=" in url:
+            video_id = url.split("watch?v=")[-1].split("&")[0]
+        elif "youtu.be/" in url:
+            video_id = url.split("youtu.be/")[-1].split("?")[0]
+        elif "invidio" in url:
+            return url  # Ya es Invidious
+
+        if not video_id:
+            raise ValueError("No se pudo extraer el ID del video.")
+
+        return f"{invidious_instance}/watch?v={video_id}"
+
+    def download_audio(self, url):
+        invidious_url = self.convert_to_invidious(url)
+
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'quiet': True,
+            'noplaylist': True,
+            'extract_flat': 'in_playlist',
+            'default_search': 'auto',
+            'outtmpl': 'downloads/%(title)s.%(ext)s',
+        }
+
+        with YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(invidious_url, download=False)
+            return info['url'], info.get('title', 'Unknown Title')
+
     @commands.command(name="play", help="Reproduce una canción desde YouTube o la añade a la cola.")
     async def play(self, ctx, url: str):
         queue = self.get_queue(ctx.guild.id)
-
-        def download_audio(url):
-            ydl_opts = {
-                'format': 'bestaudio/best',
-                'quiet': True,
-                'noplaylist': True,
-                'extract_flat': 'in_playlist',
-                'default_search': 'auto',
-                'outtmpl': 'downloads/%(title)s.%(ext)s',
-                'cookies': '/etc/secrets/cookies.txt'
-            }
-            with YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=False)
-                return info['url'], info.get('title', 'Unknown Title')
 
         if not ctx.voice_client:
             if ctx.author.voice:
@@ -38,7 +57,12 @@ class MusicCommands(commands.Cog):
                 await ctx.send(embed=Embed(description="❌ Debes estar en un canal de voz.", color=0xff0000))
                 return
 
-        audio_url, title = download_audio(url)
+        try:
+            audio_url, title = self.download_audio(url)
+        except Exception as e:
+            await ctx.send(embed=Embed(description=f"❌ Error al procesar la canción: {str(e)}", color=0xff0000))
+            return
+
         queue.add((audio_url, title))
 
         if not ctx.voice_client.is_playing():
