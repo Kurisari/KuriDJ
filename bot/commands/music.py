@@ -1,9 +1,5 @@
 from discord.ext import commands
-import discord
-from bot.core.player import play_audio
-
-from discord.ext import commands
-from discord import FFmpegPCMAudio
+from discord import FFmpegPCMAudio, Embed
 from yt_dlp import YoutubeDL
 from bot.utils.queue import MusicQueue
 
@@ -16,8 +12,8 @@ class MusicCommands(commands.Cog):
         if guild_id not in self.queues:
             self.queues[guild_id] = MusicQueue()
         return self.queues[guild_id]
-    
-    @commands.command(name="play")
+
+    @commands.command(name="play", help="Reproduce una canción desde YouTube o la añade a la cola.")
     async def play(self, ctx, url: str):
         queue = self.get_queue(ctx.guild.id)
 
@@ -38,7 +34,7 @@ class MusicCommands(commands.Cog):
             if ctx.author.voice:
                 await ctx.author.voice.channel.connect()
             else:
-                await ctx.send("❌ Debes estar en un canal de voz.")
+                await ctx.send(embed=Embed(description="❌ Debes estar en un canal de voz.", color=0xff0000))
                 return
 
         audio_url, title = download_audio(url)
@@ -47,14 +43,15 @@ class MusicCommands(commands.Cog):
         if not ctx.voice_client.is_playing():
             await self.play_next(ctx)
 
-        await ctx.send(f"🎵 Añadido a la cola: **{title}**")
+        embed = Embed(title="🎵 Añadido a la cola", description=f"**{title}**", color=0x00ffcc)
+        await ctx.send(embed=embed)
 
     async def play_next(self, ctx):
         queue = self.get_queue(ctx.guild.id)
         next_item = queue.get_next()
 
         if next_item is None:
-            await ctx.send("✅ La cola está vacía.")
+            await ctx.send(embed=Embed(description="✅ La cola está vacía.", color=0x00ff00))
             return
 
         url, title = next_item
@@ -63,62 +60,64 @@ class MusicCommands(commands.Cog):
             source,
             after=lambda e: self.bot.loop.create_task(self.play_next(ctx))
         )
-        await ctx.send(f"▶️ Reproduciendo: **{title}**")
-    
-    @commands.command(name="queue")
+        embed = Embed(title="▶️ Reproduciendo ahora", description=f"**{title}**", color=0x3498db)
+        await ctx.send(embed=embed)
+
+    @commands.command(name="queue", help="Muestra la lista de canciones en la cola.")
     async def queue_cmd(self, ctx):
         queue = self.get_queue(ctx.guild.id)
         current_queue = queue.view()
         if not current_queue:
-            await ctx.send("📭 La cola está vacía.")
+            await ctx.send(embed=Embed(description="📭 La cola está vacía.", color=0xffcc00))
         else:
-            msg = "**🎶 Cola de reproducción:**\n"
+            embed = Embed(title="🎶 Cola de reproducción", color=0x9b59b6)
             for i, (_, title) in enumerate(current_queue, 1):
-                msg += f"{i}. {title}\n"
-            await ctx.send(msg)
+                embed.add_field(name=f"{i}.", value=title, inline=False)
+            await ctx.send(embed=embed)
 
-    @commands.command(name="skip")
+    @commands.command(name="skip", help="Salta la canción actual y reproduce la siguiente.")
     async def skip(self, ctx):
         if ctx.voice_client and ctx.voice_client.is_playing():
             ctx.voice_client.stop()
-            await ctx.send("⏭️ Canción saltada.")
+            await ctx.send(embed=Embed(description="⏭️ Canción saltada.", color=0xf1c40f))
         else:
-            await ctx.send("❌ No se está reproduciendo nada.")
-    
-    @commands.command(name="pause")
+            await ctx.send(embed=Embed(description="❌ No se está reproduciendo nada.", color=0xff0000))
+
+    @commands.command(name="pause", help="Pausa la reproducción actual.")
     async def pause(self, ctx):
         vc = ctx.voice_client
         if vc and vc.is_playing():
             vc.pause()
-            await ctx.send("⏸️ Música en pausa.")
+            await ctx.send(embed=Embed(description="⏸️ Música en pausa.", color=0xe67e22))
         else:
-            await ctx.send("❌ No hay música reproduciéndose.")
+            await ctx.send(embed=Embed(description="❌ No hay música reproduciéndose.", color=0xff0000))
 
-    @commands.command(name="resume")
+    @commands.command(name="resume", help="Reanuda la reproducción pausada.")
     async def resume(self, ctx):
         vc = ctx.voice_client
         if vc and vc.is_paused():
             vc.resume()
-            await ctx.send("▶️ Música reanudada.")
+            await ctx.send(embed=Embed(description="▶️ Música reanudada.", color=0x2ecc71))
         else:
-            await ctx.send("❌ No hay música pausada.")
+            await ctx.send(embed=Embed(description="❌ No hay música pausada.", color=0xff0000))
 
-    @commands.command(name="stop")
+    @commands.command(name="stop", help="Detiene la música y limpia la cola.")
     async def stop(self, ctx):
         vc = ctx.voice_client
         if vc:
             vc.stop()
             self.get_queue(ctx.guild.id).clear()
-            await ctx.send("🛑 Reproducción detenida y cola limpiada.")
+            await ctx.send(embed=Embed(description="🛑 Reproducción detenida y cola limpiada.", color=0xc0392b))
         else:
-            await ctx.send("❌ No estoy en un canal de voz.")
+            await ctx.send(embed=Embed(description="❌ No estoy en un canal de voz.", color=0xff0000))
 
-    @commands.command(name="leave")
+    @commands.command(name="leave", help="Me desconecto del canal de voz.")
     async def leave(self, ctx):
         if ctx.voice_client:
             await ctx.voice_client.disconnect()
+            await ctx.send(embed=Embed(description="👋 Me he salido del canal de voz.", color=0x95a5a6))
         else:
-            await ctx.send("❌ No estoy en un canal de voz.")
+            await ctx.send(embed=Embed(description="❌ No estoy en un canal de voz.", color=0xff0000))
 
 async def setup(bot):
     await bot.add_cog(MusicCommands(bot))
