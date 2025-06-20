@@ -25,3 +25,6 @@ class MusicCommands(commands.Cog):
         if not ctx.voice_client:
             await ctx.invoke(self.join)
         await play_audio(ctx, url)
+
+async def setup(bot):
+    await bot.add_cog(MusicCommands(bot))
