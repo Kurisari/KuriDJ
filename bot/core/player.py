@@ -1,16 +1,16 @@
 import discord
-from yt_dlp import YoutubeDL
+import yt_dlp
+
+ydl_opts = {
+    'format': 'bestaudio/best',
+    'noplaylist': True,
+    'quiet': True,
+    'cookies': '/etc/secrets/cookies.txt'
+}
 
 async def play_audio(ctx, url):
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'noplaylist': True,
-        'quiet': True,
-        'cookiefile': '/etc/secrets/cookies.txt'  # Asegúrate que exista en Render
-    }
-
     try:
-        with YoutubeDL(ydl_opts) as ydl:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             audio_url = info['url']
 
