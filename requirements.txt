@@ -2,8 +2,6 @@ discord.py
 python-dotenv
 yt-dlp
 pynacl
-ffmpeg
 flask
 waitress
 aiohttp
-re
