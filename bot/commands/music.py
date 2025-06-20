@@ -25,6 +25,7 @@ class MusicCommands(commands.Cog):
                 'extract_flat': 'in_playlist',
                 'default_search': 'auto',
                 'outtmpl': 'downloads/%(title)s.%(ext)s',
+                'cookies': '/etc/secrets/cookies.txt'
             }
             with YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
