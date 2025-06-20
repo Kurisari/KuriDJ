@@ -10,6 +10,7 @@ def run_bot():
     intents.message_content = True
 
     bot = commands.Bot(command_prefix=config.BOT_PREFIX, intents=intents)
+    bot.remove_command("help")
 
     @bot.event
     async def on_ready():
@@ -18,6 +19,7 @@ def run_bot():
     async def load():
         await bot.load_extension("bot.commands.general")
         await bot.load_extension("bot.commands.music")
+        await bot.load_extension("bot.utils.help")
 
     import asyncio
     asyncio.run(load())
