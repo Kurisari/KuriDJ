@@ -14,6 +14,8 @@ def run_bot():
 
     @bot.event
     async def on_ready():
+        activity = discord.Game(name="💻Dev: Cristian A.")
+        await bot.change_presence(status=discord.Status.online, activity=activity)
         print(f"✅ Conectado como {bot.user}")
 
     async def load():
