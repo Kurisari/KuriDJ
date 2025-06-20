@@ -13,41 +13,22 @@ class MusicCommands(commands.Cog):
             self.queues[guild_id] = MusicQueue()
         return self.queues[guild_id]
 
-    def convert_to_invidious(self, url: str) -> str:
-        """Convierte una URL de YouTube a una de Invidious."""
-        invidious_instance = "https://vid.puffyan.us"
-        video_id = ""
-
-        if "watch?v=" in url:
-            video_id = url.split("watch?v=")[-1].split("&")[0]
-        elif "youtu.be/" in url:
-            video_id = url.split("youtu.be/")[-1].split("?")[0]
-        elif "invidio" in url:
-            return url  # Ya es Invidious
-
-        if not video_id:
-            raise ValueError("No se pudo extraer el ID del video.")
-
-        return f"{invidious_instance}/watch?v={video_id}"
-
-    def download_audio(self, url):
-        invidious_url = self.convert_to_invidious(url)
-
+    def download_audio(self, search_term):
         ydl_opts = {
             'format': 'bestaudio/best',
             'quiet': True,
             'noplaylist': True,
-            'extract_flat': 'in_playlist',
-            'default_search': 'auto',
+            'default_search': 'ytsearch',
             'outtmpl': 'downloads/%(title)s.%(ext)s',
         }
 
         with YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(invidious_url, download=False)
-            return info['url'], info.get('title', 'Unknown Title')
+            info = ydl.extract_info(search_term, download=False)
+            entry = info['entries'][0] if 'entries' in info else info
+            return entry['url'], entry.get('title', 'Título desconocido')
 
-    @commands.command(name="play", help="Reproduce una canción desde YouTube o la añade a la cola.")
-    async def play(self, ctx, url: str):
+    @commands.command(name="play", help="Reproduce una canción por nombre o URL.")
+    async def play(self, ctx, *, search_term: str):
         queue = self.get_queue(ctx.guild.id)
 
         if not ctx.voice_client:
@@ -58,7 +39,7 @@ class MusicCommands(commands.Cog):
                 return
 
         try:
-            audio_url, title = self.download_audio(url)
+            audio_url, title = self.download_audio(search_term)
         except Exception as e:
             await ctx.send(embed=Embed(description=f"❌ Error al procesar la canción: {str(e)}", color=0xff0000))
             return
