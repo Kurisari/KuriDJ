@@ -25,4 +25,6 @@ def run_bot():
 
     import asyncio
     asyncio.run(load())
+    from bot.keep_alive import keep_alive
+    keep_alive()
     bot.run(config.DISCORD_TOKEN)
