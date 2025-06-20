@@ -7,14 +7,6 @@ from bot import config
 def run_bot():
     load_dotenv()
 
-    try:
-        with open('/etc/secrets/cookies.txt', 'r') as f:
-            cookies_content = f.read()
-        print("✅ Archivo de cookies leído correctamente, contenido (primeros 300 caracteres):")
-        print(cookies_content[:300])
-    except Exception as e:
-        print(f"❌ Error al leer archivo de cookies: {e}")
-
     intents = discord.Intents.default()
     intents.message_content = True
 
